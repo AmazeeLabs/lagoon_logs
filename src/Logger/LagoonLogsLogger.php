@@ -15,14 +15,17 @@ use Drupal\lagoon_logs\LagoonLogsLogProcessor;
 
 
 class LagoonLogsLogger implements LoggerInterface {
+
   use RfcLoggerTrait;
 
   // protected static $logger;
 
   protected $hostName;
+
   protected $hostPort;
+
   protected $parser;
-  
+
   protected $rfcMonologErrorMap = [
     RfcLogLevel::EMERGENCY => 600,
     RfcLogLevel::ALERT => 550,
@@ -53,33 +56,20 @@ class LagoonLogsLogger implements LoggerInterface {
   /**
    * {@inheritdoc}
    */
-  public function log($level, $message, array $context = array()) {
+  public function log($level, $message, array $context = []) {
     global $base_url; //Stole this from the syslog logger - not sure if it's cool?
 
-    // if(!self::$logger) {
-      $logger = new Logger('LagoonLogs');
-      $formatter = new LogstashFormatter('DRUPAL'); //TODO: grab/set application name from somewhere ...
-      $udpHandler = new SyslogUdpHandler($this->hostName, $this->hostPort);
-      $udpHandler->setFormatter($formatter);
+    $logger = new Logger('LagoonLogs');
+    $formatter = new LogstashFormatter('DRUPAL'); //TODO: grab/set application name from somewhere ...
+    $udpHandler = new SyslogUdpHandler($this->hostName, $this->hostPort);
+    $udpHandler->setFormatter($formatter);
 
-      $logger->pushHandler($udpHandler);
-    // }
+    $logger->pushHandler($udpHandler);
 
     $record = [];
 
     $message_placeholders = $this->parser->parseMessagePlaceholders($message, $context);
     $message = strip_tags(empty($message_placeholders) ? $message : strtr($message, $message_placeholders));
-
-    // $record['base_url'] = $base_url;
-    // $record['timestamp'] = $context['timestamp'];
-    // $record['type'] = $context['channel'];
-    // $record['ip'] = $context['ip'];
-    // $record['request_uri'] = $context['request_uri'];
-    // $record['severity'] = $this->mapRFCtoMonologLevels($level);
-    // $record['drupal_severity'] = $level;
-    // $record['extra']['uid'] = $context['uid'];
-    // $record['link'] = strip_tags($context['link']);
-    // $record['level_name'] = $this->getRFCLevelName($level);
 
     $processorData['base_url'] = $base_url;
     $processorData['timestamp'] = $context['timestamp'];
