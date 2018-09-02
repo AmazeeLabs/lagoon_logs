@@ -1,0 +1,3 @@
+name = Lagoon Logs
+description = A simple, plug and play, logging module for Lagoon projects
+core = 7.x
