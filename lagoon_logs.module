@@ -1,6 +1,17 @@
 <?php
 
-/**
- *
- */
+require_once (__DIR__ . "/lib/LagoonLogger.php");
+require_once (__DIR__ . "/lib/LagoonProcessor.php");
 
+/**
+ * implements hook_watchdog()
+ */
+function lagoon_logs_watchdog(array $log_entry) {
+  if(!class_exists('\Monolog\Logger')) {
+    drupal_set_message('Lagoon Logs needs the Monolog library installed');
+    return;
+  }
+
+  $logger = LagoonLogger::getLogger();
+  $logger->log($log_entry);
+}
