@@ -64,9 +64,11 @@ class LagoonLogger {
 //    $processorData['type'] = $context['channel'];
     $processorData['extra']['ip'] = $logEntry['ip'];
     $processorData['request_uri'] = $logEntry['request_uri'];
-//    $processorData['severity'] = $this->mapRFCtoMonologLevels($level);
-//    $processorData['extra']['drupal_severity'] = $level;
+    $processorData['level'] = $this->mapWatchdogtoMonologLevels($logEntry['severity']);
+    $processorData['extra']['server'] = $level;
     $processorData['extra']['uid'] = $logEntry['uid'];
+    $processorData['extra']['url'] = $logEntry['request_uri'];
+
     $processorData['link'] = strip_tags($logEntry['link']);
 //    $processorData['level_name'] = $this->getRFCLevelName($level);
 
