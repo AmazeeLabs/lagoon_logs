@@ -35,11 +35,23 @@ class LagoonLogger {
     $this->parser = NULL;
   }
 
-  public static function getLogger($hostName = '172.17.0.1', $hostPort = '5141') {
-    if(!isset(self::$loggerInstance)) {
+  public static function getLogger($hostName, $hostPort) {
+    if (!isset(self::$loggerInstance)) {
       self::$loggerInstance = new self($hostName, $hostPort);
     }
     return self::$loggerInstance;
+  }
+
+  /**
+   * This will return some kind of representation of the process
+   */
+  protected function getHostProcessIndex() {
+    $nameArray = [];
+    $nameArray['system'] = 'DRUPAL';
+    $nameArray['lagoonProjectName'] = getenv("LAGOON_PROJECT");
+    $nameArray['lagoonGitBranchName'] = getenv('LAGOON_GIT_SAFE_BRANCH');
+
+    return implode('-', $nameArray);
   }
 
   public function log($logEntry) {
@@ -47,7 +59,7 @@ class LagoonLogger {
     global $base_url; //Stole this from the syslog logger - not sure if it's cool?
 
     $logger = new Logger('LagoonLogs');
-    $formatter = new LogstashFormatter('DRUPAL'); //TODO: grab/set application name from somewhere ...
+    $formatter = new LogstashFormatter($this->getHostProcessIndex()); //TODO: grab/set application name from somewhere ...
 
     $connectionString = sprintf("tcp://%s:%s", $this->hostName, 5141);//$this->hostPort);
     $udpHandler = new SocketHandler($connectionString);
@@ -59,18 +71,19 @@ class LagoonLogger {
     //let's build the data ...
 
     $processorData = ["extra" => []];
+    $processorData['message'] = $message;
     $processorData['base_url'] = $base_url;
-    $processorData['timestamp'] = $logEntry['timestamp'];
-//    $processorData['type'] = $context['channel'];
+    $processorData['extra']['watchdog_timestamp'] = $logEntry['timestamp']; //Logstash will also add it's own event time
+    //    $processorData['type'] = $context['channel'];
     $processorData['extra']['ip'] = $logEntry['ip'];
     $processorData['request_uri'] = $logEntry['request_uri'];
     $processorData['level'] = $this->mapWatchdogtoMonologLevels($logEntry['severity']);
     $processorData['extra']['server'] = $level;
     $processorData['extra']['uid'] = $logEntry['uid'];
     $processorData['extra']['url'] = $logEntry['request_uri'];
+    $processorData['extra']['link'] = strip_tags($logEntry['link']);
+    $processorData['extra']['type'] = $logEntry['type'];
 
-    $processorData['link'] = strip_tags($logEntry['link']);
-//    $processorData['level_name'] = $this->getRFCLevelName($level);
 
 
     $logger->pushProcessor(function ($record) use ($processorData) {
