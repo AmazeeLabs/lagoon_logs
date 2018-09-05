@@ -6,11 +6,13 @@ use Monolog\Formatter\LogstashFormatter;
 
 class LagoonLogger {
 
-  const LAGOON_LOGGER_DEFAULT_HOST = 'application-logs.lagoon.svc';
+  const LAGOON_LOGS_DEFAULT_HOST = 'application-logs.lagoon.svc';
 
-  const LAGOON_LOGGER_DEFAULT_PORT = '5555';
+  const LAGOON_LOGS_DEFAULT_PORT = '5555';
 
-  const LAGOON_LOGGER_DEFAULT_IDENTIFIER = 'DRUPAL';
+  const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'DRUPAL';
+
+  const LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES = 15000;
 
   //The following is used to log Lagoon Logs issues if logging target
   //cannot be reached.
@@ -99,6 +101,7 @@ class LagoonLogger {
     $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
 
     $udpHandler = new SocketHandler($connectionString);
+    $udpHandler->setChunkSize(self::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES);
 
     $udpHandler->setFormatter($formatter);
 
@@ -108,10 +111,6 @@ class LagoonLogger {
     //let's build the data ...
 
     $processorData = $this->transformDataForProcessor($logEntry, $message, $base_url);
-    //    $processorData['extra']['bigstring'] = str_repeat("a", 7500); //This seems to work.
-    // $processorData['extra']['bigstring'] = str_repeat("a", 10000); //This seems not to work.
-
-
 
     $logger->pushProcessor(function ($record) use ($processorData) {
       foreach ($processorData as $key => $value) {
