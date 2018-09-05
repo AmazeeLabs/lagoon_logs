@@ -6,11 +6,23 @@ use Monolog\Formatter\LogstashFormatter;
 
 class LagoonLogger {
 
+  const LAGOON_LOGGER_DEFAULT_HOST = 'application-logs.lagoon.svc';
+
+  const LAGOON_LOGGER_DEFAULT_PORT = '5555';
+
+  const LAGOON_LOGGER_DEFAULT_IDENTIFIER = 'DRUPAL';
+
+  //The following is used to log Lagoon Logs issues if logging target
+  //cannot be reached.
+  const LAGOON_LOGGER_WATCHDOG_FALLBACK_IDENTIFIER = 'lagoon_logs_fallback_error';
+
   protected static $loggerInstance = NULL;
 
   protected $hostName;
 
   protected $hostPort;
+
+  protected $logIdentifier;
 
   protected static $watchdogMonologErrorMap = [
     WATCHDOG_EMERGENCY => 600,
@@ -29,7 +41,7 @@ class LagoonLogger {
    * @return mixed
    */
   protected function mapWatchdogtoMonologLevels($watchdogErrorLevel) {
-    if(!in_array($watchdogErrorLevel, array_keys(self::$watchdogMonologErrorMap))) {
+    if (!in_array($watchdogErrorLevel, array_keys(self::$watchdogMonologErrorMap))) {
       return self::$watchdogMonologErrorMap[WATCHDOG_ALERT];
     }
     return self::$watchdogMonologErrorMap[$watchdogErrorLevel];
@@ -41,9 +53,10 @@ class LagoonLogger {
    * @param $hostName
    * @param $hostPort
    */
-  public function __construct($hostName, $hostPort) {
+  protected function __construct($hostName, $hostPort, $logIdentifier) {
     $this->hostName = $hostName;
     $this->hostPort = $hostPort;
+    $this->logIdentifier = $logIdentifier;
   }
 
   /**
@@ -52,9 +65,9 @@ class LagoonLogger {
    *
    * @return \LagoonLogger|null
    */
-  public static function getLogger($hostName, $hostPort) {
+  public static function getLogger($hostName, $hostPort, $logIdentifier = 'DRUPAL') {
     if (!isset(self::$loggerInstance)) {
-      self::$loggerInstance = new self($hostName, $hostPort);
+      self::$loggerInstance = new self($hostName, $hostPort, $logIdentifier);
     }
     return self::$loggerInstance;
   }
@@ -67,7 +80,7 @@ class LagoonLogger {
    */
   protected function getHostProcessIndex() {
     $nameArray = [];
-    $nameArray['system'] = 'DRUPAL';
+    $nameArray['system'] = $this->logIdentifier;
     $nameArray['lagoonProjectName'] = getenv("LAGOON_PROJECT");
     $nameArray['lagoonGitBranchName'] = getenv('LAGOON_GIT_SAFE_BRANCH');
 
@@ -83,7 +96,7 @@ class LagoonLogger {
     $logger = new Logger('LagoonLogs');
     $formatter = new LogstashFormatter($this->getHostProcessIndex());
 
-    $connectionString = sprintf("tcp://%s:%s", $this->hostName, $this->hostPort);
+    $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
 
     $udpHandler = new SocketHandler($connectionString);
 
@@ -95,6 +108,9 @@ class LagoonLogger {
     //let's build the data ...
 
     $processorData = $this->transformDataForProcessor($logEntry, $message, $base_url);
+    //    $processorData['extra']['bigstring'] = str_repeat("a", 7500); //This seems to work.
+    // $processorData['extra']['bigstring'] = str_repeat("a", 10000); //This seems not to work.
+
 
 
     $logger->pushProcessor(function ($record) use ($processorData) {
@@ -110,10 +126,16 @@ class LagoonLogger {
     try {
       $logger->log($this->mapWatchdogtoMonologLevels($logEntry['severity']), $message);
     } catch (Exception $exception) {
-      //TODO: This is currently not handled, although it should be
-      //What might work here is either some kind of fallback, or better,
-      //some kind of buffering.
+      $logMessage = sprintf("Unable to reach %s to log: %s", $connectionString, json_encode([
+        $message,
+        $processorData,
+      ]));
+      self::logWatchdogFallbackMessage($logMessage);
     }
+  }
+
+  public static function logWatchdogFallbackMessage($logMessage, $severity = WATCHDOG_NOTICE) {
+    watchdog(self::LAGOON_LOGGER_WATCHDOG_FALLBACK_IDENTIFIER, $logMessage);
   }
 
   /**

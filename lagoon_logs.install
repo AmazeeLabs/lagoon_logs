@@ -1,0 +1,18 @@
+<?php
+
+/**
+ * implements hook_requirements()
+ */
+function lagoon_logs_requirements() {
+  $requirements = array();
+  if (!module_exists('composer_manager') && !class_exists('Monolog\Logger')) {
+    $requirements['monolog_logger_class'] = array(
+      'title' => t('Monolog library not found'),
+      'value' => t(
+        'The Monolog library was not found - please install it using the Composer Manager module.'
+      ),
+      'severity' => REQUIREMENT_ERROR,
+    );
+  }
+  return $requirements;
+}
