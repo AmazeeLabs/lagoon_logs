@@ -1,3 +1,0 @@
-- Ensure composer_manager module is installed as requirement
-- Ensure that monolog package is pulled in
--

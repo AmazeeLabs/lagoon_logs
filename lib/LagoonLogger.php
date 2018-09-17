@@ -181,5 +181,5 @@ class LagoonLogger {
     $processorData['extra']['type'] = $logEntry['type'];
     return $processorData;
   }
-  
+
 }

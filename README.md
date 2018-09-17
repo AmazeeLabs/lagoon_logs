@@ -1,4 +1,4 @@
-#Lagoon Logs
+# Lagoon Logs
 
 This module aims to be as close to a zero-configuration logging system for Drupal 7 sites running on the the Amazee.io Lagoon platform.
 
