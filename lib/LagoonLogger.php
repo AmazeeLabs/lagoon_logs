@@ -92,7 +92,6 @@ class LagoonLogger {
     return self::$loggerInstance;
   }
 
-
   /**
    * @return string
    *
@@ -182,6 +181,5 @@ class LagoonLogger {
     $processorData['extra']['type'] = $logEntry['type'];
     return $processorData;
   }
-
-
+  
 }
