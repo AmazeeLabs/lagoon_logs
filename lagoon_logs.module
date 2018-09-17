@@ -25,27 +25,27 @@ function lagoon_logs_settings_display() {
 
   $form['ll_settings_description'] = [
     '#prefix' => '<div class="ll-settings-description">',
+    '#suffix' => '</div>',
     '#markup' => t('This page simply lists the current settings for the Lagoon Logs module. The defaults are set in configuration, this page is meant primarily for troubleshooting.'),
-    '#suffix' => '</div>'
   ];
 
   $form['ll_settings_logs_host'] = [
     '#prefix' => '<div class="ll-settings-key-value">',
     '#suffix' => '</div>',
-    '#markup' => t('Logstash host: ') . variable_get('LAGOON_LOGS_HOST', '172.17.0.1'),
+    '#markup' => t('Logstash host: ') . variable_get('LAGOON_LOGS_HOST', LagoonLogger::LAGOON_LOGS_DEFAULT_HOST),
 
   ];
 
   $form['ll_settings_logs_port'] = [
     '#prefix' => '<div class="ll-settings-key-value">',
     '#suffix' => '</div>',
-    '#markup' => t('Logstash port: ') . variable_get('LAGOON_LOGS_PORT', '5140'),
+    '#markup' => t('Logstash port: ') . variable_get('LAGOON_LOGS_PORT', LagoonLogger::LAGOON_LOGS_DEFAULT_PORT),
   ];
 
   $form['ll_settings_logs_identifier'] = [
     '#prefix' => '<div class="ll-settings-key-value">',
     '#suffix' => '</div>',
-    '#markup' => t('Logstash leading identifier: ') . variable_get('LAGOON_LOGS_IDENTIFIER', 'DRUPAL'),
+    '#markup' => t('Logstash leading identifier: ') . variable_get('LAGOON_LOGS_IDENTIFIER', LagoonLogger::LAGOON_LOGS_DEFAULT_IDENTIFIER),
   ];
 
   return $form;
@@ -62,9 +62,9 @@ function lagoon_logs_watchdog(array $log_entry) {
 
   if($log_entry['type'] != LagoonLogger::LAGOON_LOGGER_WATCHDOG_FALLBACK_IDENTIFIER) {
     print($log_entry['type']);
-    $logger = LagoonLogger::getLogger(variable_get('LAGOON_LOGS_HOST', '172.17.0.1'),
-      variable_get('LAGOON_LOGS_PORT', '5140'),
-      variable_get('LAGOON_LOGS_IDENTIFIER', 'DRUPAL'));
+    $logger = LagoonLogger::getLogger(variable_get('LAGOON_LOGS_HOST', LagoonLogger::LAGOON_LOGS_DEFAULT_HOST),
+      variable_get('LAGOON_LOGS_PORT', LagoonLogger::LAGOON_LOGS_DEFAULT_PORT),
+      variable_get('LAGOON_LOGS_IDENTIFIER', LagoonLogger::LAGOON_LOGS_DEFAULT_IDENTIFIER));
     $logger->log($log_entry);
   }
 }

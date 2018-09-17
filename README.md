@@ -30,3 +30,5 @@ $conf['LAGOON_LOGS_HOST'] = 'new-application-logs.lagoon.svc';
 $conf['LAGOON_LOGS_PORT'] = '5556';
 $conf['LAGOON_LOGS_IDENTIFIER'] = 'specific system identifier name';
 ```
+
+You're able to view the effective settings for the current Drupal installation by visiting the page [admin/settings/lagoon_logs](admin/settings/lagoon_logs)
