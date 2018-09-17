@@ -9,7 +9,7 @@ use Drupal\Core\Logger\RfcLoggerTrait;
 use Psr\Log\LoggerInterface;
 
 use Monolog\Logger;
-use Monolog\Handler\SyslogUdpHandler;
+use Monolog\Handler\SocketHandler;
 use Monolog\Formatter\LogstashFormatter;
 use Drupal\lagoon_logs\LagoonLogsLogProcessor;
 
@@ -17,6 +17,24 @@ use Drupal\lagoon_logs\LagoonLogsLogProcessor;
 class LagoonLogsLogger implements LoggerInterface {
 
   use RfcLoggerTrait;
+
+  const LAGOON_LOGS_MONOLOG_CHANNEL_NAME = 'LagoonLogs';
+
+  const LAGOON_LOGS_DEFAULT_HOST = 'application-logs.lagoon.svc';
+
+  const LAGOON_LOGS_DEFAULT_PORT = '5555';
+
+  const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'DRUPAL';
+
+  const LAGOON_LOGS_DEFAULT_SAFE_BRANCH = 'unset';
+
+  const LAGOON_LOGS_DEFAULT_LAGOON_PROJECT = 'unset';
+
+  const LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES = 15000;
+
+  //The following is used to log Lagoon Logs issues if logging target
+  //cannot be reached.
+  const LAGOON_LOGGER_WATCHDOG_FALLBACK_IDENTIFIER = 'lagoon_logs_fallback_error';
 
   // protected static $logger;
 
@@ -26,6 +44,13 @@ class LagoonLogsLogger implements LoggerInterface {
 
   protected $parser;
 
+
+  /**
+   * See
+   * https://github.com/Seldaek/monolog/blob/master/doc/01-usage.md#log-levels
+   *
+   * @var array
+   */
   protected $rfcMonologErrorMap = [
     RfcLogLevel::EMERGENCY => 600,
     RfcLogLevel::ALERT => 550,
@@ -37,6 +62,13 @@ class LagoonLogsLogger implements LoggerInterface {
     RfcLogLevel::DEBUG => 100,
   ];
 
+
+  public static function create(ConfigFactoryInterface $config, LogMessageParserInterface $parser) {
+    $host = $config->get('lagoon_logs.settings')->get('host');
+    $port = $config->get('lagoon_logs.settings')->get('port');
+
+    return new self($host, $port, $config, $parser);
+  }
 
   public function __construct($host, $port, ConfigFactoryInterface $config_factory, LogMessageParserInterface $parser) {
     $this->hostName = $host;
@@ -59,32 +91,39 @@ class LagoonLogsLogger implements LoggerInterface {
   public function log($level, $message, array $context = []) {
     global $base_url; //Stole this from the syslog logger - not sure if it's cool?
 
-    $logger = new Logger('LagoonLogs');
+    $logger = new Logger(self::LAGOON_LOGS_MONOLOG_CHANNEL_NAME);
     $formatter = new LogstashFormatter('DRUPAL'); //TODO: grab/set application name from somewhere ...
-    $udpHandler = new SyslogUdpHandler($this->hostName, $this->hostPort);
+
+    $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
+    $udpHandler = new SocketHandler($connectionString);
+    //$udpHandler->setChunkSize(self::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES);
+
     $udpHandler->setFormatter($formatter);
 
     $logger->pushHandler($udpHandler);
 
-    $record = [];
-
     $message_placeholders = $this->parser->parseMessagePlaceholders($message, $context);
     $message = strip_tags(empty($message_placeholders) ? $message : strtr($message, $message_placeholders));
 
+    //TODO: set some index to getenv('LAGOON_PROJECT') . '-' . getenv('LAGOON_GIT_SAFE_BRANCH')
+    //used to identify
+
+    $processorData = ["extra" => []];
+    $processorData['message'] = $message;
     $processorData['base_url'] = $base_url;
-    $processorData['timestamp'] = $context['timestamp'];
-    $processorData['type'] = $context['channel'];
+    $processorData['extra']['watchdog_timestamp'] = $context['timestamp']; //Logstash will also add it's own event time
     $processorData['extra']['ip'] = $context['ip'];
     $processorData['request_uri'] = $context['request_uri'];
-    $processorData['severity'] = $this->mapRFCtoMonologLevels($level);
-    $processorData['extra']['drupal_severity'] = $level;
+    $processorData['level'] = $this->mapRFCtoMonologLevels($level);
     $processorData['extra']['uid'] = $context['uid'];
-    $processorData['link'] = strip_tags($context['link']);
-    $processorData['level_name'] = $this->getRFCLevelName($level);
+    $processorData['extra']['url'] = $context['request_uri'];
+    $processorData['extra']['link'] = strip_tags($context['link']);
+    $processorData['extra']['type'] = $context['channel'];
+
 
     $logger->pushProcessor(new LagoonLogsLogProcessor($processorData));
 
-    $logger->log($this->mapRFCtoMonologLevels($level), $message, $context);
+    $logger->log($this->mapRFCtoMonologLevels($level), $message);
   }
 
 }

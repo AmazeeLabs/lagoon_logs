@@ -1,6 +1,7 @@
 services:
   logger.lagoon_logs:
     class: Drupal\lagoon_logs\Logger\LagoonLogsLogger
+    factory: Drupal\lagoon_logs\Logger\LagoonLogsLogger::create
     tags:
       - { name: logger }
-    arguments: ["application-logs.lagoon.svc", 5555, '@config.factory', '@logger.log_message_parser']
+    arguments: ['@config.factory', '@logger.log_message_parser']
