@@ -3,7 +3,56 @@
 require_once(__DIR__ . "/lib/LagoonLogger.php");
 
 /**
- * implements hook_watchdog()
+ * Implements hook_menu()
+ */
+function lagoon_logs_menu() {
+  return ['admin/settings/lagoon_logs' => [
+    'title' => 'Lagoon Logs Settings',
+    'description' => 'Displays effective settings for current Lagoon Logs setup (read only)',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => ['lagoon_logs_settings_display'],
+    'access arguments' => ['administer content'],
+    'type' => MENU_NORMAL_ITEM,
+  ]];
+
+}
+
+/**
+ * Form to display current Lagoon Logs settings (READ ONLY)
+ */
+function lagoon_logs_settings_display() {
+  $form = [];
+
+  $form['ll_settings_description'] = [
+    '#prefix' => '<div class="ll-settings-description">',
+    '#markup' => t('This page simply lists the current settings for the Lagoon Logs module. The defaults are set in configuration, this page is meant primarily for troubleshooting.'),
+    '#suffix' => '</div>'
+  ];
+
+  $form['ll_settings_logs_host'] = [
+    '#prefix' => '<div class="ll-settings-key-value">',
+    '#suffix' => '</div>',
+    '#markup' => t('Logstash host: ') . variable_get('LAGOON_LOGS_HOST', '172.17.0.1'),
+
+  ];
+
+  $form['ll_settings_logs_port'] = [
+    '#prefix' => '<div class="ll-settings-key-value">',
+    '#suffix' => '</div>',
+    '#markup' => t('Logstash port: ') . variable_get('LAGOON_LOGS_PORT', '5140'),
+  ];
+
+  $form['ll_settings_logs_identifier'] = [
+    '#prefix' => '<div class="ll-settings-key-value">',
+    '#suffix' => '</div>',
+    '#markup' => t('Logstash leading identifier: ') . variable_get('LAGOON_LOGS_IDENTIFIER', 'DRUPAL'),
+  ];
+
+  return $form;
+}
+
+/**
+ * Implements hook_watchdog()
  */
 function lagoon_logs_watchdog(array $log_entry) {
   if (!class_exists('\Monolog\Logger')) {

@@ -6,11 +6,17 @@ use Monolog\Formatter\LogstashFormatter;
 
 class LagoonLogger {
 
+  const LAGOON_LOGS_MONOLOG_CHANNEL_NAME = 'LagoonLogs';
+
   const LAGOON_LOGS_DEFAULT_HOST = 'application-logs.lagoon.svc';
 
   const LAGOON_LOGS_DEFAULT_PORT = '5555';
 
   const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'DRUPAL';
+
+  const LAGOON_LOGS_DEFAULT_SAFE_BRANCH = 'unset';
+
+  const LAGOON_LOGS_DEFAULT_LAGOON_PROJECT = 'unset';
 
   const LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES = 15000;
 
@@ -26,6 +32,12 @@ class LagoonLogger {
 
   protected $logIdentifier;
 
+  /**
+   * See
+   * https://github.com/Seldaek/monolog/blob/master/doc/01-usage.md#log-levels
+   *
+   * @var array
+   */
   protected static $watchdogMonologErrorMap = [
     WATCHDOG_EMERGENCY => 600,
     WATCHDOG_ALERT => 550,
@@ -43,7 +55,9 @@ class LagoonLogger {
    * @return mixed
    */
   protected function mapWatchdogtoMonologLevels($watchdogErrorLevel) {
-    if (!in_array($watchdogErrorLevel, array_keys(self::$watchdogMonologErrorMap))) {
+    if (!in_array($watchdogErrorLevel,
+      array_keys(self::$watchdogMonologErrorMap))
+    ) {
       return self::$watchdogMonologErrorMap[WATCHDOG_ALERT];
     }
     return self::$watchdogMonologErrorMap[$watchdogErrorLevel];
@@ -67,7 +81,11 @@ class LagoonLogger {
    *
    * @return \LagoonLogger|null
    */
-  public static function getLogger($hostName, $hostPort, $logIdentifier = 'DRUPAL') {
+  public static function getLogger(
+    $hostName,
+    $hostPort,
+    $logIdentifier = 'DRUPAL'
+  ) {
     if (!isset(self::$loggerInstance)) {
       self::$loggerInstance = new self($hostName, $hostPort, $logIdentifier);
     }
@@ -83,8 +101,10 @@ class LagoonLogger {
   protected function getHostProcessIndex() {
     $nameArray = [];
     $nameArray['system'] = $this->logIdentifier;
-    $nameArray['lagoonProjectName'] = getenv("LAGOON_PROJECT");
-    $nameArray['lagoonGitBranchName'] = getenv('LAGOON_GIT_SAFE_BRANCH');
+    $nameArray['lagoonProjectName'] = getenv('LAGOON_PROJECT',
+      self::LAGOON_LOGS_DEFAULT_LAGOON_PROJECT);
+    $nameArray['lagoonGitBranchName'] = getenv('LAGOON_GIT_SAFE_BRANCH',
+      self::LAGOON_LOGS_DEFAULT_SAFE_BRANCH);
 
     return implode('-', $nameArray);
   }
@@ -95,7 +115,7 @@ class LagoonLogger {
   public function log($logEntry) {
     global $base_url;
 
-    $logger = new Logger('LagoonLogs');
+    $logger = new Logger(self::LAGOON_LOGS_MONOLOG_CHANNEL_NAME);
     $formatter = new LogstashFormatter($this->getHostProcessIndex());
 
     $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
@@ -108,9 +128,8 @@ class LagoonLogger {
     $logger->pushHandler($udpHandler);
     $message = !is_null($logEntry['variables']) ? strtr($logEntry['message'], $logEntry['variables']) : $logEntry['message'];
 
-    //let's build the data ...
-
-    $processorData = $this->transformDataForProcessor($logEntry, $message, $base_url);
+    $processorData = $this->transformDataForProcessor($logEntry, $message,
+      $base_url);
 
     $logger->pushProcessor(function ($record) use ($processorData) {
       foreach ($processorData as $key => $value) {
@@ -123,17 +142,22 @@ class LagoonLogger {
 
 
     try {
-      $logger->log($this->mapWatchdogtoMonologLevels($logEntry['severity']), $message);
+      $logger->log($this->mapWatchdogtoMonologLevels($logEntry['severity']),
+        $message);
     } catch (Exception $exception) {
-      $logMessage = sprintf("Unable to reach %s to log: %s", $connectionString, json_encode([
-        $message,
-        $processorData,
-      ]));
+      $logMessage = sprintf("Unable to reach %s to log: %s", $connectionString,
+        json_encode([
+          $message,
+          $processorData,
+        ]));
       self::logWatchdogFallbackMessage($logMessage);
     }
   }
 
-  public static function logWatchdogFallbackMessage($logMessage, $severity = WATCHDOG_NOTICE) {
+  public static function logWatchdogFallbackMessage(
+    $logMessage,
+    $severity = WATCHDOG_NOTICE
+  ) {
     watchdog(self::LAGOON_LOGGER_WATCHDOG_FALLBACK_IDENTIFIER, $logMessage);
   }
 
