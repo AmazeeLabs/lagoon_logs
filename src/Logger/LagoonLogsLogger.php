@@ -66,7 +66,6 @@ class LagoonLogsLogger implements LoggerInterface {
   public static function create(ConfigFactoryInterface $config, LogMessageParserInterface $parser) {
     $host = $config->get('lagoon_logs.settings')->get('host');
     $port = $config->get('lagoon_logs.settings')->get('port');
-
     return new self($host, $port, $config, $parser);
   }
 
