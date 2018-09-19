@@ -66,9 +66,10 @@ class LagoonLogsLogger implements LoggerInterface {
 
 
 
-  public function __construct($host, $port, ConfigFactoryInterface $config_factory, LogMessageParserInterface $parser) {
+  public function __construct($host, $port, $logFullIdentifier, LogMessageParserInterface $parser) {
     $this->hostName = $host;
     $this->hostPort = $port;
+    $this->logFullIdentifier = $logFullIdentifier;
     $this->parser = $parser;
   }
 
@@ -116,7 +117,7 @@ class LagoonLogsLogger implements LoggerInterface {
     global $base_url; //Stole this from the syslog logger - not sure if it's cool?
 
     $logger = new Logger(self::LAGOON_LOGS_MONOLOG_CHANNEL_NAME);
-    $formatter = new LogstashFormatter('DRUPAL'); //TODO: grab/set application name from somewhere ...
+    $formatter = new LogstashFormatter($this->logFullIdentifier); //TODO: grab/set application name from somewhere ...
 
     $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
     $udpHandler = new SocketHandler($connectionString);
