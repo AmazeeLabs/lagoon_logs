@@ -42,6 +42,8 @@ class LagoonLogsLogger implements LoggerInterface {
 
   protected $hostPort;
 
+  protected $logFullIdentifier;
+
   protected $parser;
 
 
@@ -63,11 +65,6 @@ class LagoonLogsLogger implements LoggerInterface {
   ];
 
 
-  public static function create(ConfigFactoryInterface $config, LogMessageParserInterface $parser) {
-    $host = $config->get('lagoon_logs.settings')->get('host');
-    $port = $config->get('lagoon_logs.settings')->get('port');
-    return new self($host, $port, $config, $parser);
-  }
 
   public function __construct($host, $port, ConfigFactoryInterface $config_factory, LogMessageParserInterface $parser) {
     $this->hostName = $host;
@@ -77,6 +74,34 @@ class LagoonLogsLogger implements LoggerInterface {
 
   protected function mapRFCtoMonologLevels(int $rfcErrorLevel) {
     return $this->rfcMonologErrorMap[$rfcErrorLevel];
+  }
+
+  /**
+   * @param $level
+   * @param $message
+   * @param array $context
+   * @param $base_url
+   *
+   * @return array
+   */
+  protected function transformDataForProcessor(
+    $level,
+    $message,
+    array $context,
+    $base_url
+  ) {
+    $processorData = ["extra" => []];
+    $processorData['message'] = $message;
+    $processorData['base_url'] = $base_url;
+    $processorData['extra']['watchdog_timestamp'] = $context['timestamp']; //Logstash will also add it's own event time
+    $processorData['extra']['ip'] = $context['ip'];
+    $processorData['request_uri'] = $context['request_uri'];
+    $processorData['level'] = $this->mapRFCtoMonologLevels($level);
+    $processorData['extra']['uid'] = $context['uid'];
+    $processorData['extra']['url'] = $context['request_uri'];
+    $processorData['extra']['link'] = strip_tags($context['link']);
+    $processorData['extra']['type'] = $context['channel'];
+    return $processorData;
   }
 
   protected function getRFCLevelName(int $rfcErrorLevel) {
@@ -95,7 +120,7 @@ class LagoonLogsLogger implements LoggerInterface {
 
     $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
     $udpHandler = new SocketHandler($connectionString);
-    //$udpHandler->setChunkSize(self::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES);
+    $udpHandler->setChunkSize(self::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES);
 
     $udpHandler->setFormatter($formatter);
 
@@ -104,20 +129,9 @@ class LagoonLogsLogger implements LoggerInterface {
     $message_placeholders = $this->parser->parseMessagePlaceholders($message, $context);
     $message = strip_tags(empty($message_placeholders) ? $message : strtr($message, $message_placeholders));
 
-    //TODO: set some index to getenv('LAGOON_PROJECT') . '-' . getenv('LAGOON_GIT_SAFE_BRANCH')
-    //used to identify
 
-    $processorData = ["extra" => []];
-    $processorData['message'] = $message;
-    $processorData['base_url'] = $base_url;
-    $processorData['extra']['watchdog_timestamp'] = $context['timestamp']; //Logstash will also add it's own event time
-    $processorData['extra']['ip'] = $context['ip'];
-    $processorData['request_uri'] = $context['request_uri'];
-    $processorData['level'] = $this->mapRFCtoMonologLevels($level);
-    $processorData['extra']['uid'] = $context['uid'];
-    $processorData['extra']['url'] = $context['request_uri'];
-    $processorData['extra']['link'] = strip_tags($context['link']);
-    $processorData['extra']['type'] = $context['channel'];
+    $processorData = $this->transformDataForProcessor($level, $message,
+      $context, $base_url);
 
 
     $logger->pushProcessor(new LagoonLogsLogProcessor($processorData));

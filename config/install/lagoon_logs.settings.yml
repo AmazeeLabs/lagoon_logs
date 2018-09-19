@@ -1,2 +1,3 @@
 host: application-logs.lagoon.svc
 port: 5555
+identifier: DRUPAL
