@@ -29,9 +29,6 @@ class LagoonLogger {
   protected $hostName;
 
   protected $hostPort;
-
-  protected $logIdentifier;
-
   /**
    * See
    * https://github.com/Seldaek/monolog/blob/master/doc/01-usage.md#log-levels
@@ -69,10 +66,9 @@ class LagoonLogger {
    * @param $hostName
    * @param $hostPort
    */
-  protected function __construct($hostName, $hostPort, $logIdentifier) {
+  protected function __construct($hostName, $hostPort) {
     $this->hostName = $hostName;
     $this->hostPort = $hostPort;
-    $this->logIdentifier = $logIdentifier;
   }
 
   /**
@@ -83,11 +79,10 @@ class LagoonLogger {
    */
   public static function getLogger(
     $hostName,
-    $hostPort,
-    $logIdentifier = 'DRUPAL'
+    $hostPort
   ) {
     if (!isset(self::$loggerInstance)) {
-      self::$loggerInstance = new self($hostName, $hostPort, $logIdentifier);
+      self::$loggerInstance = new self($hostName, $hostPort);
     }
     return self::$loggerInstance;
   }
@@ -99,7 +94,6 @@ class LagoonLogger {
    */
   protected function getHostProcessIndex() {
     $nameArray = [];
-    $nameArray['system'] = $this->logIdentifier;
     $nameArray['lagoonProjectName'] = getenv('LAGOON_PROJECT') ?: self::LAGOON_LOGS_DEFAULT_LAGOON_PROJECT;
     $nameArray['lagoonGitBranchName'] = getenv('LAGOON_GIT_SAFE_BRANCH') ?: self::LAGOON_LOGS_DEFAULT_SAFE_BRANCH;
 
@@ -113,7 +107,7 @@ class LagoonLogger {
     global $base_url;
 
     $logger = new Logger(self::LAGOON_LOGS_MONOLOG_CHANNEL_NAME);
-    $formatter = new LogstashFormatter($this->getHostProcessIndex());
+    $formatter = new LogstashFormatter($this->getHostProcessIndex(), null, null, 'ctxt_', 1);
 
     $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
 
@@ -169,9 +163,8 @@ class LagoonLogger {
     $processorData = ["extra" => []];
     $processorData['message'] = $message;
     $processorData['base_url'] = $base_url;
-    $processorData['extra']['watchdog_timestamp'] = $logEntry['timestamp']; //Logstash will also add it's own event time
     $processorData['extra']['ip'] = $logEntry['ip'];
-    $processorData['request_uri'] = $logEntry['request_uri'];
+    $processorData['extra']['request_uri'] = $logEntry['request_uri'];
     $processorData['level'] = $this->mapWatchdogtoMonologLevels($logEntry['severity']);
     $processorData['extra']['uid'] = $logEntry['uid'];
     $processorData['extra']['url'] = $logEntry['request_uri'];
