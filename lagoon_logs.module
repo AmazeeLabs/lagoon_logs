@@ -61,7 +61,6 @@ function lagoon_logs_watchdog(array $log_entry) {
   }
 
   if($log_entry['type'] != LagoonLogger::LAGOON_LOGGER_WATCHDOG_FALLBACK_IDENTIFIER) {
-    print($log_entry['type']);
     $logger = LagoonLogger::getLogger(variable_get('LAGOON_LOGS_HOST', LagoonLogger::LAGOON_LOGS_DEFAULT_HOST),
       variable_get('LAGOON_LOGS_PORT', LagoonLogger::LAGOON_LOGS_DEFAULT_PORT),
       variable_get('LAGOON_LOGS_IDENTIFIER', LagoonLogger::LAGOON_LOGS_DEFAULT_IDENTIFIER));

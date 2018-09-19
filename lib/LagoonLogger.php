@@ -14,9 +14,9 @@ class LagoonLogger {
 
   const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'DRUPAL';
 
-  const LAGOON_LOGS_DEFAULT_SAFE_BRANCH = 'unset';
+  const LAGOON_LOGS_DEFAULT_SAFE_BRANCH = 'safe_branch_unset';
 
-  const LAGOON_LOGS_DEFAULT_LAGOON_PROJECT = 'unset';
+  const LAGOON_LOGS_DEFAULT_LAGOON_PROJECT = 'project_unset';
 
   const LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES = 15000;
 
@@ -100,10 +100,8 @@ class LagoonLogger {
   protected function getHostProcessIndex() {
     $nameArray = [];
     $nameArray['system'] = $this->logIdentifier;
-    $nameArray['lagoonProjectName'] = getenv('LAGOON_PROJECT',
-      self::LAGOON_LOGS_DEFAULT_LAGOON_PROJECT);
-    $nameArray['lagoonGitBranchName'] = getenv('LAGOON_GIT_SAFE_BRANCH',
-      self::LAGOON_LOGS_DEFAULT_SAFE_BRANCH);
+    $nameArray['lagoonProjectName'] = getenv('LAGOON_PROJECT') ?: self::LAGOON_LOGS_DEFAULT_LAGOON_PROJECT;
+    $nameArray['lagoonGitBranchName'] = getenv('LAGOON_GIT_SAFE_BRANCH') ?: self::LAGOON_LOGS_DEFAULT_SAFE_BRANCH;
 
     return implode('-', $nameArray);
   }
@@ -167,7 +165,7 @@ class LagoonLogger {
    *
    * @return array
    */
-  public function transformDataForProcessor($logEntry, $message, $base_url) {
+  protected function transformDataForProcessor($logEntry, $message, $base_url) {
     $processorData = ["extra" => []];
     $processorData['message'] = $message;
     $processorData['base_url'] = $base_url;
