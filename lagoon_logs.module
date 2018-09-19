@@ -1,6 +1,7 @@
 <?php
 
 require_once(__DIR__ . "/lib/LagoonLogger.php");
+require_once(__DIR__ . "/lib/LagoonLogstashFormatter.php");
 
 /**
  * Implements hook_menu()

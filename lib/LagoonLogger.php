@@ -107,34 +107,36 @@ class LagoonLogger {
     global $base_url;
 
     $logger = new Logger(self::LAGOON_LOGS_MONOLOG_CHANNEL_NAME);
-    $formatter = new LogstashFormatter($this->getHostProcessIndex(), null, null, 'ctxt_', 1);
+//    $formatter = new LogstashFormatter($this->getHostProcessIndex(), null, null, 'ctxt_', 1);
 
+    $formatter = new LagoonLogstashFormatter($this->getHostProcessIndex());
     $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
 
-    $udpHandler = new SocketHandler($connectionString);
-    $udpHandler->setChunkSize(self::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES);
+//    $udpHandler = new SocketHandler($connectionString);
+//    $udpHandler->setChunkSize(self::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES);
+//    $udpHandler->setFormatter($formatter);
 
-    $udpHandler->setFormatter($formatter);
+//    $logger->pushHandler($udpHandler);
 
-    $logger->pushHandler($udpHandler);
     $message = !is_null($logEntry['variables']) ? strtr($logEntry['message'], $logEntry['variables']) : $logEntry['message'];
 
     $processorData = $this->transformDataForProcessor($logEntry, $message,
       $base_url);
 
-    $logger->pushProcessor(function ($record) use ($processorData) {
-      foreach ($processorData as $key => $value) {
-        if (empty($record[$key])) {
-          $record[$key] = $value;
-        }
-      }
-      return $record;
-    });
+//    $logger->pushProcessor(function ($record) use ($processorData) {
+//      foreach ($processorData as $key => $value) {
+//        if (empty($record[$key])) {
+//          $record[$key] = $value;
+//        }
+//      }
+//      return $record;
+//    });
 
 
     try {
-      $logger->log($this->mapWatchdogtoMonologLevels($logEntry['severity']),
-        $message);
+//      $logger->log($this->mapWatchdogtoMonologLevels($logEntry['severity']),
+//        $message);
+      drupal_set_message(json_encode($formatter->format($processorData)));
     } catch (Exception $exception) {
       $logMessage = sprintf("Unable to reach %s to log: %s", $connectionString,
         json_encode([
