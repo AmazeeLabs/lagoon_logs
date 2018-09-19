@@ -93,15 +93,12 @@ class LagoonLogsLogger implements LoggerInterface {
   ) {
     $processorData = ["extra" => []];
     $processorData['message'] = $message;
-    $processorData['base_url'] = $base_url;
-    $processorData['extra']['watchdog_timestamp'] = $context['timestamp']; //Logstash will also add it's own event time
     $processorData['extra']['ip'] = $context['ip'];
-    $processorData['request_uri'] = $context['request_uri'];
+    $processorData['extra']['request_uri'] = $context['request_uri'];
     $processorData['level'] = $this->mapRFCtoMonologLevels($level);
     $processorData['extra']['uid'] = $context['uid'];
-    $processorData['extra']['url'] = $context['request_uri'];
     $processorData['extra']['link'] = strip_tags($context['link']);
-    $processorData['extra']['type'] = $context['channel'];
+    $processorData['extra']['channel'] = $context['channel'];
     return $processorData;
   }
 
@@ -117,7 +114,7 @@ class LagoonLogsLogger implements LoggerInterface {
     global $base_url; //Stole this from the syslog logger - not sure if it's cool?
 
     $logger = new Logger(self::LAGOON_LOGS_MONOLOG_CHANNEL_NAME);
-    $formatter = new LogstashFormatter($this->logFullIdentifier); //TODO: grab/set application name from somewhere ...
+    $formatter = new LogstashFormatter($this->logFullIdentifier, null, null, 'ctxt_', 1); //TODO: grab/set application name from somewhere ...
 
     $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
     $udpHandler = new SocketHandler($connectionString);
