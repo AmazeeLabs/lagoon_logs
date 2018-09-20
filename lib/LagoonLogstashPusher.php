@@ -11,7 +11,7 @@ class LagoonLogstashPusher {
 
     try {
       $msg = json_encode($payload) . "\n";
-      if(!socket_sendto($socket, $msg, strlen($msg), $flags = 0, $host, $port)) {
+      if(!@socket_sendto($socket, $msg, strlen($msg), $flags = 0, $host, $port)) {
         throw new Exception('Could not send message to Logstash server: ' . $err);
       }
     } catch (Exception $ex) {
