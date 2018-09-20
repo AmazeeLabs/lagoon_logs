@@ -20,17 +20,9 @@ class LagoonLogsLogger implements LoggerInterface {
 
   const LAGOON_LOGS_MONOLOG_CHANNEL_NAME = 'LagoonLogs';
 
-  const LAGOON_LOGS_DEFAULT_HOST = 'application-logs.lagoon.svc';
-
-  const LAGOON_LOGS_DEFAULT_PORT = '5555';
-
-  const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'DRUPAL';
-
-  const LAGOON_LOGS_DEFAULT_SAFE_BRANCH = 'unset';
-
-  const LAGOON_LOGS_DEFAULT_LAGOON_PROJECT = 'unset';
-
   const LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES = 15000;
+
+  const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'drupal';
 
   //The following is used to log Lagoon Logs issues if logging target
   //cannot be reached.
@@ -63,7 +55,6 @@ class LagoonLogsLogger implements LoggerInterface {
     RfcLogLevel::INFO => 200,
     RfcLogLevel::DEBUG => 100,
   ];
-
 
 
   public function __construct($host, $port, $logFullIdentifier, LogMessageParserInterface $parser) {
@@ -99,6 +90,7 @@ class LagoonLogsLogger implements LoggerInterface {
     $processorData['extra']['uid'] = $context['uid'];
     $processorData['extra']['link'] = strip_tags($context['link']);
     $processorData['extra']['channel'] = $context['channel'];
+    $processorData['extra']['application'] = self::LAGOON_LOGS_DEFAULT_IDENTIFIER;
     return $processorData;
   }
 
@@ -111,10 +103,10 @@ class LagoonLogsLogger implements LoggerInterface {
    * {@inheritdoc}
    */
   public function log($level, $message, array $context = []) {
-    global $base_url; //Stole this from the syslog logger - not sure if it's cool?
+    global $base_url;
 
     $logger = new Logger(self::LAGOON_LOGS_MONOLOG_CHANNEL_NAME);
-    $formatter = new LogstashFormatter($this->logFullIdentifier, null, null, 'ctxt_', 1); //TODO: grab/set application name from somewhere ...
+    $formatter = new LogstashFormatter($this->logFullIdentifier, null, null, 'ctxt_', 1);
 
     $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
     $udpHandler = new SocketHandler($connectionString);
@@ -127,14 +119,17 @@ class LagoonLogsLogger implements LoggerInterface {
     $message_placeholders = $this->parser->parseMessagePlaceholders($message, $context);
     $message = strip_tags(empty($message_placeholders) ? $message : strtr($message, $message_placeholders));
 
-
     $processorData = $this->transformDataForProcessor($level, $message,
       $context, $base_url);
 
-
     $logger->pushProcessor(new LagoonLogsLogProcessor($processorData));
 
-    $logger->log($this->mapRFCtoMonologLevels($level), $message);
+    try{
+      $logger->log($this->mapRFCtoMonologLevels($level), $message);
+    } catch (\Exception $exception) {
+      
+    }
+
   }
 
 }
