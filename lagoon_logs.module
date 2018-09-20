@@ -2,6 +2,7 @@
 
 require_once(__DIR__ . "/lib/LagoonLogger.php");
 require_once(__DIR__ . "/lib/LagoonLogstashFormatter.php");
+require_once(__DIR__ . "/lib/LagoonLogstashPusher.php");
 
 /**
  * Implements hook_menu()
@@ -56,11 +57,6 @@ function lagoon_logs_settings_display() {
  * Implements hook_watchdog()
  */
 function lagoon_logs_watchdog(array $log_entry) {
-  if (!class_exists('\Monolog\Logger')) {
-    LagoonLogger::logWatchdogFallbackMessage('Lagoon Logs needs the Monolog library installed to run');
-    return;
-  }
-
   if($log_entry['type'] != LagoonLogger::LAGOON_LOGGER_WATCHDOG_FALLBACK_IDENTIFIER) {
     $logger = LagoonLogger::getLogger(variable_get('LAGOON_LOGS_HOST', LagoonLogger::LAGOON_LOGS_DEFAULT_HOST),
       variable_get('LAGOON_LOGS_PORT', LagoonLogger::LAGOON_LOGS_DEFAULT_PORT),
