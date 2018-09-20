@@ -8,7 +8,7 @@ class LagoonLogger {
 
   const LAGOON_LOGS_DEFAULT_PORT = '5140';
 
-  const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'DRUPAL';
+  const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'drupal';
 
   const LAGOON_LOGS_DEFAULT_SAFE_BRANCH = 'safe_branch_unset';
 
@@ -159,8 +159,8 @@ class LagoonLogger {
     $processorData['extra']['request_uri'] = $logEntry['request_uri'];
     $processorData['level_name'] = $this->mapWatchdogToMonologLevelNames($logEntry['severity']);
     $processorData['extra']['uid'] = $logEntry['uid'];
-    $processorData['extra']['url'] = $logEntry['request_uri'];
     $processorData['extra']['link'] = strip_tags($logEntry['link']);
+    $processorData['extra']['application'] = self::LAGOON_LOGS_DEFAULT_IDENTIFIER;
     return $processorData;
   }
 
