@@ -5,14 +5,6 @@ This module aims to be as close to a zero-configuration logging system for Drupa
 
 ## Installation
 
-Lagoon Logs relies on the wonderful [monolog library](https://github.com/Seldaek/monolog),
-as such, the library needs to be available at runtime.
-
-Monolog is installed via composer, and one way of accomplishing this in Drupal 7 is to install the [Composer manager](https://www.drupal.org/project/composer_manager) module.
-
-Essential reading to help understand and set up Composer Manager under Drupal 7 can be found here:
-* [Composer Manager for Drupal 6 and 7](https://www.drupal.org/node/2405805)
-
 
 ## Use/configuration
 

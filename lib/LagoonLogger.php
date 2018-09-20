@@ -1,16 +1,12 @@
 <?php
 
-use Monolog\Logger;
-use Monolog\Handler\SocketHandler;
-use Monolog\Formatter\LogstashFormatter;
-
 class LagoonLogger {
 
   const LAGOON_LOGS_MONOLOG_CHANNEL_NAME = 'LagoonLogs';
 
   const LAGOON_LOGS_DEFAULT_HOST = 'application-logs.lagoon.svc';
 
-  const LAGOON_LOGS_DEFAULT_PORT = '5555';
+  const LAGOON_LOGS_DEFAULT_PORT = '5140';
 
   const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'DRUPAL';
 
@@ -46,6 +42,17 @@ class LagoonLogger {
     WATCHDOG_DEBUG => 100,
   ];
 
+  protected static $levelNames = [
+    600 => 'EMERGENCY',
+    550 => 'ALERT',
+    500 => 'CRITICAL',
+    400 => 'ERROR',
+    300 => 'WARNING',
+    250 => 'NOTICE',
+    200 => 'INFO',
+    100 => 'DEBUG',
+  ];
+
   /**
    * @param $watchdogErrorLevel
    *
@@ -58,6 +65,10 @@ class LagoonLogger {
       return self::$watchdogMonologErrorMap[WATCHDOG_ALERT];
     }
     return self::$watchdogMonologErrorMap[$watchdogErrorLevel];
+  }
+
+  protected function mapWatchdogToMonologLevelNames($watchdogErrorLevel) {
+    return self::$levelNames[self::mapWatchdogtoMonologLevels($watchdogErrorLevel)];
   }
 
   /**
@@ -106,35 +117,15 @@ class LagoonLogger {
   public function log($logEntry) {
     global $base_url;
 
-    $logger = new Logger(self::LAGOON_LOGS_MONOLOG_CHANNEL_NAME);
-    $formatter = new LogstashFormatter($this->getHostProcessIndex(), null, null, 'ctxt_', 1);
+    $formatter = new LagoonLogstashFormatter($this->getHostProcessIndex());
 
-    $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
-
-    $udpHandler = new SocketHandler($connectionString);
-    $udpHandler->setChunkSize(self::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES);
-
-    $udpHandler->setFormatter($formatter);
-
-    $logger->pushHandler($udpHandler);
     $message = !is_null($logEntry['variables']) ? strtr($logEntry['message'], $logEntry['variables']) : $logEntry['message'];
 
     $processorData = $this->transformDataForProcessor($logEntry, $message,
       $base_url);
 
-    $logger->pushProcessor(function ($record) use ($processorData) {
-      foreach ($processorData as $key => $value) {
-        if (empty($record[$key])) {
-          $record[$key] = $value;
-        }
-      }
-      return $record;
-    });
-
-
     try {
-      $logger->log($this->mapWatchdogtoMonologLevels($logEntry['severity']),
-        $message);
+      LagoonLogstashPusher::pushUdp($this->hostName, $this->hostPort, $formatter->format($processorData));
     } catch (Exception $exception) {
       $logMessage = sprintf("Unable to reach %s to log: %s", $connectionString,
         json_encode([
@@ -161,15 +152,15 @@ class LagoonLogger {
    */
   protected function transformDataForProcessor($logEntry, $message, $base_url) {
     $processorData = ["extra" => []];
+    $processorData['channel'] = $logEntry['type'];
     $processorData['message'] = $message;
     $processorData['base_url'] = $base_url;
     $processorData['extra']['ip'] = $logEntry['ip'];
     $processorData['extra']['request_uri'] = $logEntry['request_uri'];
-    $processorData['level'] = $this->mapWatchdogtoMonologLevels($logEntry['severity']);
+    $processorData['level_name'] = $this->mapWatchdogToMonologLevelNames($logEntry['severity']);
     $processorData['extra']['uid'] = $logEntry['uid'];
     $processorData['extra']['url'] = $logEntry['request_uri'];
     $processorData['extra']['link'] = strip_tags($logEntry['link']);
-    $processorData['extra']['type'] = $logEntry['type'];
     return $processorData;
   }
 
