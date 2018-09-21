@@ -7,9 +7,10 @@ use Drupal\Core\Logger\LogMessageParserInterface;
 use Drupal\Core\Logger\RfcLogLevel;
 use Drupal\Core\Logger\RfcLoggerTrait;
 use Psr\Log\LoggerInterface;
+use Drupal\lagoon_logs\Logger\SocketHandler;
 
 use Monolog\Logger;
-use Monolog\Handler\SocketHandler;
+//use Monolog\Handler\SocketHandler; //use when new monolog release is out
 use Monolog\Formatter\LogstashFormatter;
 use Drupal\lagoon_logs\LagoonLogsLogProcessor;
 
@@ -20,7 +21,7 @@ class LagoonLogsLogger implements LoggerInterface {
 
   const LAGOON_LOGS_MONOLOG_CHANNEL_NAME = 'LagoonLogs';
 
-  const LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES = 15000;
+  const LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES = 15000; //will be used when new release of monolog is available
 
   const LAGOON_LOGS_DEFAULT_IDENTIFIER = 'drupal';
 
@@ -110,6 +111,8 @@ class LagoonLogsLogger implements LoggerInterface {
 
     $connectionString = sprintf("udp://%s:%s", $this->hostName, $this->hostPort);
     $udpHandler = new SocketHandler($connectionString);
+
+    // Monolog has a change waiting for release that allows us to have large UDP packets.
     $udpHandler->setChunkSize(self::LAGOON_LOGS_DEFAULT_CHUNK_SIZE_BYTES);
 
     $udpHandler->setFormatter($formatter);
