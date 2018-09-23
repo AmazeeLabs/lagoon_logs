@@ -42,5 +42,4 @@ class LagoonLogsInfoController extends ControllerBase {
     return $form;
   }
 
-
 }

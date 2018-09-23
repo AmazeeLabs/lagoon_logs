@@ -1,7 +1,6 @@
 # Lagoon Logs
 
-This module aims to be as close to a zero-configuration logging system for Drupal 7 sites running on the the Amazee.io Lagoon platform.
-
+This module aims to be as close to a zero-configuration logging system for Drupal 8 sites running on the the Amazee.io Lagoon platform.
 
 ## Installation
 
@@ -17,19 +16,9 @@ drush pm-enable -y lagoon_logs
 
 Lagoon Logs is meant to be a Zero Configuration setup for Amazee.IO Lagoon projects.
 
-Once the prerequisite modules and libraries have been installed,
-it will, by default send its logs to a Logstash instance at "application-logs.lagoon.svc:5555".
-Further, the logs sent do Logstash are identified by default as 'DRUPAL', but this can be overridden by setting
-the 'lagoon_logs.settings.identifier' setting (example below).
+Once the prerequisite modules and libraries have been installed, it will, by default send its logs to a Logstash instance at "application-logs.lagoon.svc:5140".
 
-You're able to override these options by setting a configuration entry in your *.settings.php files by using the following:
- 
-```
-$config['lagoon_logs.settings']['host'] = '172.17.0.1';
-$config['lagoon_logs.settings']['port'] = 5141;
-$config['lagoon_logs.settings']['identifier'] = 'customidentifier';
-```
+## License note
 
-
-
-You're able to view the effective settings for the current Drupal installation by visiting the page [admin/settings/lagoon_logs](admin/settings/lagoon_logs)
+The file src/Logger/SocketHandler.php is pulled in from the [Monolog package](https://github.com/Seldaek/monolog) which uses the [MIT license](https://github.com/Seldaek/monolog/blob/master/LICENSE).
+This is a temporary measure on our side to allow us to pull in the stable version of Monolog, while supporting large UDP packets (which the present stable version of Monolog doesn't).
