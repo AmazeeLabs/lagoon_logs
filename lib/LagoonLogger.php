@@ -127,7 +127,7 @@ class LagoonLogger {
     try {
       LagoonLogstashPusher::pushUdp($this->hostName, $this->hostPort, $formatter->format($processorData));
     } catch (Exception $exception) {
-      $logMessage = sprintf("Unable to reach %s to log: %s", $this->hostname . ":" . $this->hostPort,
+      $logMessage = sprintf("Unable to reach %s to log: %s", $this->hostName . ":" . $this->hostPort,
         json_encode([
           $message,
           $processorData,
