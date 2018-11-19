@@ -19,3 +19,7 @@ Lagoon Logs is meant to be a Zero Configuration setup for Amazee.IO Lagoon proje
 Once the library has been installed,it will, by default send its logs to a Logstash instance at "application-logs.lagoon.svc:5140".
 
 You're able to view the effective settings for the current Drupal installation by visiting the page [admin/settings/lagoon_logs](admin/settings/lagoon_logs)
+
+## Credits/Thanks
+
+Parts of the initial D7 implmementation were taken from Christoph Hetzog's (thedukes) [sandbox implementation of Drupal logstash logging](https://www.drupal.org/sandbox/theduke/1787798). Thank you Christoph.
