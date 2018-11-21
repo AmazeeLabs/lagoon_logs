@@ -1,4 +1,4 @@
-name: Lagoon Logs module
+name: Lagoon Logs Module
 description: Simple monolog wrapper for Lagoon.
 package: Custom
 
